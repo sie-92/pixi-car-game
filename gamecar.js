@@ -1,7 +1,6 @@
-let app, background, car, enemies = [], uiElements = [];
+let app, background, car, enemies = [], uiElements = [], assets;
 let score = 0, level = 1, lives = 3;
 const keys = { left: false, right: false };
-let speed = 5;
 
 window.onload = async function () {
   PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -19,16 +18,23 @@ window.onload = async function () {
     tree: 'assets/tree.png'
   });
 
-  const assets = await PIXI.Assets.loadBundle('main');
+  assets = await PIXI.Assets.loadBundle('main');
 
-  // Background road
-  background = new PIXI.TilingSprite(assets.road, app.screen.width, app.screen.height);
+  background = new PIXI.TilingSprite(
+    assets.road,
+    app.screen.width,
+    app.screen.height
+  );
+  background.tileScale.set(
+    app.screen.width / assets.road.width,
+    app.screen.height / assets.road.height
+  );
   app.stage.addChild(background);
 
   // Player car
   car = new PIXI.Sprite(assets.playerCar);
   car.anchor.set(0.5, 1);
-  car.scale.set(1.5);
+  car.scale.set(window.innerHeight / 900);
   app.stage.addChild(car);
 
   // UI
@@ -40,7 +46,7 @@ window.onload = async function () {
   uiElements = [scoreText, levelText, livesText, messageText];
   app.stage.addChild(...uiElements);
 
-  // Controls
+  // Keyboard controls
   window.addEventListener('keydown', e => {
     if (e.code === 'ArrowLeft') keys.left = true;
     if (e.code === 'ArrowRight') keys.right = true;
@@ -52,12 +58,13 @@ window.onload = async function () {
     if (e.code === 'ArrowRight') keys.right = false;
   });
 
-  // Touch support
+  // Touch controls
   app.view.addEventListener('touchstart', e => {
     const x = e.touches[0].clientX;
     keys.left = x < window.innerWidth / 2;
     keys.right = !keys.left;
   });
+
   app.view.addEventListener('touchend', () => {
     keys.left = keys.right = false;
   });
@@ -66,7 +73,7 @@ window.onload = async function () {
   setInterval(() => {
     const e = new PIXI.Sprite(assets.enemyCar);
     e.anchor.set(0.5, 1);
-    e.scale.set(1.5);
+    e.scale.set(window.innerHeight / 900);
     e.x = 100 + Math.floor(Math.random() * 6) * 100;
     e.y = -100;
     e.vy = 3 + level * 0.2;
@@ -74,14 +81,13 @@ window.onload = async function () {
     enemies.push(e);
   }, 1500);
 
-  // Resize support
   handleResize();
   window.addEventListener('resize', handleResize);
 
   app.ticker.add(updateGame);
 };
 
-// Resize logic
+// Handle dynamic resizing
 function handleResize() {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -91,11 +97,16 @@ function handleResize() {
   if (background) {
     background.width = width;
     background.height = height;
+    background.tileScale.set(
+      width / assets.road.width,
+      height / assets.road.height
+    );
   }
 
   if (car) {
     car.x = width / 2;
     car.y = height - 30;
+    car.scale.set(height / 900);
   }
 
   if (uiElements.length >= 4) {
@@ -115,7 +126,8 @@ function updateUI() {
 function updateGame() {
   background.tilePosition.y += 4 + level * 0.3;
 
-  let vx = keys.left ? -speed : keys.right ? speed : 0;
+  const moveSpeed = 5;
+  let vx = keys.left ? -moveSpeed : keys.right ? moveSpeed : 0;
   car.x = Math.max(50, Math.min(app.screen.width - 50, car.x + vx));
 
   for (let i = enemies.length - 1; i >= 0; i--) {
@@ -145,7 +157,7 @@ function updateGame() {
 }
 
 function gameOver() {
-  uiElements[3].text = 'Game Over! Click or SPACE to restart';
+  uiElements[3].text = 'Game Over! Click or press SPACE to restart';
   app.ticker.stop();
   app.view.addEventListener('click', restartGame);
   window.addEventListener('keydown', spaceRestart);
