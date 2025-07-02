@@ -13,7 +13,7 @@ window.onload = async function () {
   document.body.appendChild(app.view);
 
   await PIXI.Assets.addBundle('main', {
-    playerCar: 'assets/playerCar.png',
+    playerCar: 'assets/Audi.png',
     enemyCar: 'assets/enemyCar.png',
     road: 'assets/road.png',
     tree: 'assets/tree.png'
